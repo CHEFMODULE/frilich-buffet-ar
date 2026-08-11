@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>CHEFMODULE AR</title>
+<script>
+const _gc=HTMLCanvasElement.prototype.getContext;
+HTMLCanvasElement.prototype.getContext=function(t,a){
+  if(t==="webgl2"||t==="webgl"){a=a||{};a.preserveDrawingBuffer=true}
+  return _gc.call(this,t,a)};
+</script>
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1A1D23;font-family:-apple-system,system-ui,sans-serif;color:#fff;overflow:hidden}
+model-viewer{width:100vw;height:100vh;--poster-color:#1A1D23}
+.ld{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#1A1D23;z-index:50;transition:opacity .6s}
+.ld.done{opacity:0;pointer-events:none}
+.ld-bar{width:220px;height:4px;background:#333;border-radius:2px;overflow:hidden}
+.ld-fill{height:100%;background:#B84060;width:0%;transition:width .2s}
+.ld-pct{font-size:14px;color:#999;margin-top:10px;letter-spacing:.04em;font-weight:600}
+.ld-txt{font-size:16px;color:#888;margin-top:8px;letter-spacing:.04em}
+.ar-btn{position:absolute;bottom:calc(24% + 10vh);left:50%;transform:translateX(-50%);background:#B84060;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;letter-spacing:.06em;box-shadow:0 4px 16px rgba(var(--burg-sig-rgb),.4);z-index:5}
+.ar-btn:active{transform:translateX(-50%) scale(.96)}
+.nfo{position:absolute;top:12%;left:50%;transform:translateX(-50%);text-align:center;font-size:24px;color:#999;line-height:1.6;z-index:4}
+.hint{position:absolute;top:5%;left:50%;transform:translateX(-50%);width:90%;max-width:430px;max-height:46vh;overflow-y:auto;overscroll-behavior:contain;background:rgba(35,38,45,.95);border:1px solid rgba(var(--burg-hell-rgb),.42);border-radius:12px;padding:14px 16px 13px;z-index:6;text-align:left}
+.hint h3{font-size:15px;font-weight:600;color:#F2F2F2;margin:0 0 6px}
+.hint .lead{font-size:12.5px;color:rgba(242,242,242,.55);line-height:1.5;margin:0 0 9px}
+.hint .warn{display:none;background:rgba(180,64,96,.28);border:1px solid rgba(226,75,74,.6);border-radius:8px;padding:9px 32px 9px 10px;font-size:12.5px;color:#fff;line-height:1.4;margin:0 0 10px}
+.hint .cls{position:absolute;top:5px;right:11px;font-size:22px;color:rgba(242,242,242,.45);cursor:pointer;line-height:1;padding:2px 5px}
+model-viewer[ar-status="session-started"] .hint,model-viewer[ar-status="object-placed"] .hint{display:none}
+.desk{display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:15px;color:#999;z-index:30;background:#1A1D23}
+.wp{display:none;position:absolute;top:12%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fff;padding:18px 28px;border-radius:14px;font-size:24px;text-align:center;z-index:20;line-height:1.5;max-width:85%}
+model-viewer[ar-status="session-started"] .wp-scan{display:block}
+model-viewer[ar-status="object-placed"] .wp-scan{display:none}
+.wp-warn{background:rgba(180,64,96,.9)}
+model-viewer[ar-tracking="not-tracking"] .wp-warn{display:block}
+model-viewer[ar-tracking="tracking"] .wp-warn{display:none}
+.ar-snap{display:none;position:absolute;bottom:12%;right:24px;width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,.85);border:3px solid #fff;cursor:pointer;z-index:25;align-items:center;justify-content:center;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.ar-snap svg{width:28px;height:28px;fill:#333}
+.ar-snap:active{transform:scale(.9)}
+model-viewer[ar-status="session-started"] .ar-snap,model-viewer[ar-status="object-placed"] .ar-snap{display:flex}
+.ar-flash{display:none;position:fixed;inset:0;background:#fff;z-index:100;pointer-events:none}
+.ar-flash.on{display:block;animation:flash .3s ease-out forwards}
+@keyframes flash{0%{opacity:.7}100%{opacity:0}}
+.ar-wm{display:none;position:absolute;bottom:24px;left:24px;z-index:24;opacity:.7}
+.ar-wm img{height:20px}
+model-viewer[ar-status="session-started"] .ar-wm,model-viewer[ar-status="object-placed"] .ar-wm{display:block}
+.v-hdr{display:none;position:fixed;top:0;left:0;right:0;height:48px;background:rgba(33,37,44,0.92);border-bottom:1px solid #7D1E3F;align-items:center;padding:0 18px;z-index:40;backdrop-filter:blur(8px)}
+.v-hdr.show{display:flex}
+.v-hdr-logo{height:22px;opacity:0.9}
+.v-hdr-sp{flex:1}
+.v-hdr-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:#21252C;border:1px solid #7D1E3F;border-radius:6px;font-size:10px;font-weight:600;letter-spacing:0.04em;color:#fff;cursor:pointer;text-decoration:none;transition:all .2s;margin-left:8px}
+.v-hdr-btn:hover{background:rgba(255,255,255,0.06)}
+.v-hdr-btn svg{width:13px;height:13px;fill:currentColor}
+.v-toast{position:fixed;top:56px;left:50%;transform:translateX(-50%);background:#21252C;border:1px solid #7D1E3F;border-radius:6px;padding:8px 16px;font-size:10px;font-weight:600;color:#fff;opacity:0;transition:opacity .3s;z-index:41;pointer-events:none}
+.v-toast.show{opacity:1}
+</style>
+</head><body>
+<model-viewer
+  src="https://frilich-buffet-ar.dawn-poetry-eb08.workers.dev/download/projekt_1786475119651.glb"
+  ar ar-modes="webxr scene-viewer quick-look"
+  ar-placement="wall"
+  ar-scale="fixed"
+  camera-controls touch-action="pan-y"
+  shadow-intensity="1" shadow-softness="0.8"
+  interaction-prompt="none" loading="eager"
+  style="width:100%;height:100vh"
+  alt="CHEFMODULE Konfiguration">
+  <button slot="ar-button" class="ar-btn">AR STARTEN</button>
+  <div class="wp wp-scan">Richte dein Smartphone auf die Wand und bewege es langsam hin und her</div>
+  <div class="wp wp-warn">Wand nicht erkannt — bitte langsamer bewegen</div>
+  <button class="ar-snap" id="ar-snap" title="Screenshot"><svg viewBox="0 0 24 24"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z"/><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg></button>
+</model-viewer>
+<div class="ar-flash" id="ar-flash"></div>
+<div class="v-hdr" id="v-hdr">
+  <span style="font-size:14px;font-weight:800;letter-spacing:0.12em">CHEF<span style="font-weight:400">MODULE</span></span>
+  <div class="v-hdr-sp"></div>
+  <button class="v-hdr-btn" id="v-share"><svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>Teilen</button>
+  <a class="v-hdr-btn" href="https://www.chefmodule.com" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>Website</a>
+</div>
+<div class="v-toast" id="v-toast">Link kopiert!</div>
+<div class="ld" id="ld">
+  
+  <div class="ld-bar"><div class="ld-fill" id="lf"></div></div>
+  <div class="ld-pct" id="lp">0 %</div>
+  <div class="ld-txt">Modell wird geladen…</div>
+</div>
+<div class="nfo" id="nfo" style="display:none">Auf <b>AR STARTEN</b> tippen · Smartphone auf die Wand richten</div>
+<div class="hint" id="hint">
+  <span class="cls" id="hint-x">&times;</span>
+  <div class="warn" id="hint-warn">Diese Seite bitte in <svg viewBox="0 0 24 24" width="13" height="13" fill="#8AB4F8" style="vertical-align:-2px;flex-shrink:0"><path d="M12 0C8.21 0 4.831 1.757 2.632 4.501l3.953 6.848A5.454 5.454 0 0 1 12 6.545h10.691A12 12 0 0 0 12 0zM1.931 5.47A11.943 11.943 0 0 0 0 12c0 6.012 4.42 10.991 10.189 11.864l3.953-6.847a5.45 5.45 0 0 1-6.865-2.29zm13.342 2.166a5.446 5.446 0 0 1 1.45 7.09l.002.001h-.002l-5.344 9.257c.206.01.413.016.621.016 6.627 0 12-5.373 12-12 0-1.54-.29-3.011-.818-4.364zM12 16.364a4.364 4.364 0 1 1 0-8.728 4.364 4.364 0 0 1 0 8.728Z"/></svg><b style="font-weight:700;color:#F2F2F2">&nbsp;Chrome</b> öffnen — im App-Browser startet AR nicht.</div>
+  <h3 id="hint-title"></h3>
+  <div class="lead">Dein Aufbau erscheint in Originalgröße über die Kamera bei dir vor Ort.</div>
+  <div id="hint-ios"><ol style="margin:0 0 8px;padding-left:18px;color:rgba(242,242,242,0.82);font-size:13.5px;line-height:1.75"><li style="margin-bottom:5px">Auf „AR starten“ tippen — keine App nötig.</li><li style="margin-bottom:5px">Handy langsam über die Wand schwenken, bis die Fläche erkannt ist — antippen zum Platzieren.</li><li style="margin-bottom:5px">Kurz Geduld: Das Modell erscheint evtl. klein und wächst auf Originalgröße — zurücktreten, dann herumgehen.</li></ol><div style="font-size:12.5px;color:rgba(242,242,242,0.45);font-style:italic;line-height:1.5">Voraussetzung: iOS 12 oder neuer, Kamerazugriff erlauben.</div></div>
+  <div id="hint-and" style="display:none"><ol style="margin:0 0 8px;padding-left:18px;color:rgba(242,242,242,0.82);font-size:13.5px;line-height:1.75"><li style="margin-bottom:5px">Auf „AR starten“ tippen.</li><li style="margin-bottom:5px">Einmalig „Google Play-Dienste für AR“ erlauben bzw. installieren.</li><li style="margin-bottom:5px">Handy langsam über die Wand bewegen, antippen zum Platzieren. Kurz Geduld: Modell wächst auf Originalgröße — zurücktreten, dann herumgehen.</li></ol><div style="font-size:12.5px;color:rgba(242,242,242,0.45);font-style:italic;line-height:1.5">Voraussetzung: ARCore-fähiges Gerät, Kamerazugriff erlauben.</div></div>
+</div>
+<div class="desk" id="desk">
+  <div style="font-size:48px;margin-bottom:16px">&#128241;</div>
+  <div>Für die AR-Ansicht bitte<br>auf dem <b>Smartphone</b> öffnen.</div>
+</div>
+<script type="module">
+const mv=document.querySelector("model-viewer");
+const ld=document.getElementById("ld");
+const lf=document.getElementById("lf");
+const lp=document.getElementById("lp");
+let modelReady=false,timerDone=false,sPct=0;
+function tryHideLoader(){if(modelReady&&timerDone)ld.classList.add("done")}
+function showPct(p){lf.style.width=p+"%";lp.textContent=p+" %"}
+const iv=setInterval(()=>{sPct+=0.5;if(sPct>99)sPct=99;showPct(Math.round(sPct))},200);
+const _isViewer=new URLSearchParams(location.search).has("viewer");
+(function(){var ua=navigator.userAgent||"";
+var _ios=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+var _inapp=/FBAN|FBAV|FB_IAB|Instagram|Line\/|Twitter|WhatsApp|WeChat|MicroMessenger|Snapchat|TikTok|musical_ly|Pinterest/i.test(ua);
+var _hb=document.getElementById("hint");if(!_hb)return;
+document.getElementById("hint-title").textContent=_ios?"iPhone erkannt — so geht’s":"Android erkannt — so geht’s";
+document.getElementById("hint-ios").style.display=_ios?"":"none";
+document.getElementById("hint-and").style.display=_ios?"none":"";
+if(!_ios&&_inapp)document.getElementById("hint-warn").style.display="block";
+document.getElementById("hint-x").addEventListener("click",function(){_hb.style.display="none";var n=document.getElementById("nfo");if(n&&!_isViewer&&mv.canActivateAR!==false)n.style.display="block"});
+if(_isViewer)_hb.style.display="none";
+})();
+if(_isViewer){mv.removeAttribute("ar");mv.removeAttribute("ar-modes");mv.removeAttribute("ar-placement");mv.removeAttribute("ar-scale");document.title="CHEFMODULE 3D Vorschau";document.getElementById("v-hdr").classList.add("show")}else{mv.removeAttribute("camera-controls");mv.removeAttribute("touch-action");mv.style.transform="translateY(10vh)";}
+document.getElementById("v-share").addEventListener("click",function(){navigator.clipboard.writeText(location.href).then(function(){var t=document.getElementById("v-toast");t.classList.add("show");setTimeout(function(){t.classList.remove("show")},2000)})});
+mv.addEventListener("load",()=>{clearInterval(iv);showPct(100);modelReady=true;tryHideLoader();if(_isViewer){document.getElementById("nfo").style.display="none"}else if(!mv.canActivateAR){document.getElementById("desk").style.display="flex";document.getElementById("nfo").style.display="none"}});
+setTimeout(()=>{timerDone=true;tryHideLoader()},5000);
+const snapBtn=document.getElementById("ar-snap");
+const flashEl=document.getElementById("ar-flash");
+snapBtn.addEventListener("click",async(e)=>{
+  e.stopPropagation();
+  try{
+    const glCanvas=mv.shadowRoot.querySelector("canvas");
+    if(!glCanvas){console.warn("No canvas");return}
+    const w=glCanvas.width,h2=glCanvas.height;
+    const cv=document.createElement("canvas");cv.width=w;cv.height=h2;
+    const cx=cv.getContext("2d");cx.drawImage(glCanvas,0,0);
+    const now=new Date();const ts=now.toLocaleDateString("de-DE")+", "+now.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+    cx.font="bold "+Math.round(h2*0.02)+"px Arial";cx.fillStyle="rgba(255,255,255,.6)";
+    cx.textAlign="right";cx.textBaseline="bottom";
+    cx.fillText(ts,w-Math.round(h2*0.02),h2-Math.round(h2*0.02));
+    flashEl.classList.add("on");setTimeout(()=>flashEl.classList.remove("on"),400);
+    cv.toBlob(async(blob)=>{
+      const file=new File([blob],"CHEFMODULE_AR.png",{type:"image/png"});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){
+        try{await navigator.share({files:[file],title:"CHEFMODULE AR"})}catch(e2){}
+      }else{
+        const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+        a.download="CHEFMODULE_AR.png";a.click();URL.revokeObjectURL(a.href);
+      }
+    },"image/png");
+  }catch(err){console.error("Screenshot error:",err)}
+});
+</script>
+</body></html>
